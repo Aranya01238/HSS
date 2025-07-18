@@ -1,34 +1,50 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { ArrowLeft, Calendar, Clock, User, Info, MapPin } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useState } from "react";
+import { ArrowLeft, Calendar, Clock, User, Info, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserBookingFormProps {
-  doctor: any
-  hospital: any
-  onSubmit: (details: any) => void
-  onNavigate: (view: string) => void
+  doctor: any;
+  hospital: any;
+  onSubmit: (details: any) => void;
+  onNavigate: (view: string) => void;
 }
 
-export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: UserBookingFormProps) {
-  const [date, setDate] = useState<Date>()
-  const [timeSlot, setTimeSlot] = useState<string>("")
-  const [referralId, setReferralId] = useState<string>("")
-  const [notes, setNotes] = useState<string>("")
-  const [appointmentType, setAppointmentType] = useState<string>("new")
-  const [showMap, setShowMap] = useState(true)
+export function UserBookingForm({
+  doctor,
+  hospital,
+  onSubmit,
+  onNavigate,
+}: UserBookingFormProps) {
+  const { toast } = useToast();
+  const [date, setDate] = useState<Date>();
+  const [timeSlot, setTimeSlot] = useState<string>("");
+  const [referralId, setReferralId] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [appointmentType, setAppointmentType] = useState<string>("new");
+  const [showMap, setShowMap] = useState(true);
 
   const timeSlots = [
     "09:00 AM",
@@ -46,10 +62,10 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
     "04:00 PM",
     "04:30 PM",
     "05:00 PM",
-  ]
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     const bookingDetails = {
       doctor,
@@ -60,32 +76,59 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
       notes,
       appointmentType,
       totalAmount: calculateTotal(),
-    }
+    };
 
-    onSubmit(bookingDetails)
-  }
+    onSubmit(bookingDetails);
+  };
 
   const calculateTotal = () => {
-    let total = doctor?.consultationFee || 0
-
-    // Add any additional fees or discounts here
+    let total = doctor?.consultationFee || 0;
     if (appointmentType === "emergency") {
-      total += 500 // Emergency fee
+      total += 500;
     }
-
-    return total
-  }
+    return total;
+  };
 
   const isValidReferral = () => {
-    // Check if referral ID matches the format (5 digits followed by "re")
-    if (!referralId) return true
-    const regex = /^\d{5}re$/
-    return regex.test(referralId)
-  }
+    if (!referralId) return true;
+    const regex = /^\d{5}re$/;
+    return regex.test(referralId);
+  };
+
+  const handleGetDirections = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const destination = encodeURIComponent(hospital?.address);
+          const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${destination}`;
+          window.open(mapsUrl, "_blank");
+        },
+        () => {
+          toast({
+            title: "Location Access Denied",
+            description: "Opening directions without current location",
+            variant: "destructive",
+          });
+          const destination = encodeURIComponent(hospital?.address);
+          const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+          window.open(mapsUrl, "_blank");
+        }
+      );
+    } else {
+      const destination = encodeURIComponent(hospital?.address);
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+      window.open(mapsUrl, "_blank");
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <Button variant="ghost" className="mb-4 pl-0 flex items-center" onClick={() => onNavigate("doctorSelection")}>
+      <Button
+        variant="ghost"
+        className="mb-4 pl-0 flex items-center"
+        onClick={() => onNavigate("doctorSelection")}
+      >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Doctors
       </Button>
@@ -100,7 +143,11 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
                 <Label htmlFor="date">Select Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button id="date" variant="outline" className="w-full justify-start text-left font-normal">
+                    <Button
+                      id="date"
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
                       <Calendar className="mr-2 h-4 w-4" />
                       {date ? format(date, "PPP") : <span>Select date</span>}
                     </Button>
@@ -125,7 +172,9 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
                       key={slot}
                       type="button"
                       variant={timeSlot === slot ? "default" : "outline"}
-                      className={`text-xs ${timeSlot === slot ? "bg-primary hover:bg-primary" : ""}`}
+                      className={`text-xs ${
+                        timeSlot === slot ? "bg-primary hover:bg-primary" : ""
+                      }`}
                       onClick={() => setTimeSlot(slot)}
                     >
                       {slot}
@@ -146,7 +195,7 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
                       <Info className="h-4 w-4 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Format: 12345re (5 digits followed by &quot;re&quot;)</p>
+                      <p>Format: 12345re (5 digits followed by "re")</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -159,7 +208,9 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
                 className={!isValidReferral() ? "border-red-500" : ""}
               />
               {!isValidReferral() && (
-                <p className="text-xs text-red-500">Invalid format. Use 5 digits followed by &quot;re&quot;</p>
+                <p className="text-xs text-red-500">
+                  Invalid format. Use 5 digits followed by "re"
+                </p>
               )}
             </div>
 
@@ -214,7 +265,9 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <h3 className="font-semibold">{doctor?.name}</h3>
-                <p className="text-sm text-muted-foreground">{doctor?.specialization}</p>
+                <p className="text-sm text-muted-foreground">
+                  {doctor?.specialization}
+                </p>
               </div>
 
               <div className="space-y-1 text-sm">
@@ -258,44 +311,49 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
             </CardContent>
           </Card>
 
-          {/* Hospital Location Map */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between">
-                <span>Hospital Location</span>
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setShowMap(!showMap)}>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <span>{hospital?.address}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:text-primary"
+                  onClick={() => setShowMap(!showMap)}
+                >
                   {showMap ? "Hide Map" : "Show Map"}
                 </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="flex items-start">
-                  <MapPin className="h-4 w-4 mr-2 mt-1 text-primary" />
-                  <span className="text-sm">{hospital?.address}</span>
-                </div>
-
                 {showMap && (
-                  <div className="mt-2 rounded-md overflow-hidden border h-[200px] relative">
-                    {/* This would be a real map in production */}
-                    <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                  <div className="mt-2 rounded-lg overflow-hidden border bg-muted/30 h-[120px] relative">
+                    <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
-                        <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
-                        <p className="text-sm font-medium">{hospital?.name}</p>
-                        <p className="text-xs text-muted-foreground">{hospital?.address}</p>
+                        <MapPin className="h-8 w-8 text-red-500 mx-auto" />
+                        <p className="text-sm font-medium mt-1">
+                          {hospital?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {hospital?.address}
+                        </p>
                       </div>
                     </div>
-                    <img
-                      src="/placeholder.svg?height=200&width=400&text=Map+View"
-                      alt="Hospital Location Map"
-                      className="w-full h-full object-cover"
-                    />
                   </div>
                 )}
 
-                <div className="flex justify-between text-sm pt-2">
-                  <span className="text-muted-foreground">Distance: {hospital?.distance}</span>
-                  <Button variant="link" size="sm" className="p-0 h-auto text-primary">
+                <div className="flex justify-between items-center text-sm pt-2">
+                  <span>Distance: {hospital?.distance}</span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600 p-0"
+                    onClick={handleGetDirections}
+                  >
                     Get Directions
                   </Button>
                 </div>
@@ -305,5 +363,5 @@ export function UserBookingForm({ doctor, hospital, onSubmit, onNavigate }: User
         </div>
       </div>
     </div>
-  )
+  );
 }
